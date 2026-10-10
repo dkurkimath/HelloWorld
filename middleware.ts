@@ -1,0 +1,7 @@
+export { default } from "next-auth/middleware";
+
+export const config = {
+  // Protect everything except the login page, the NextAuth API routes,
+  // and static assets.
+  matcher: ["/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)"],
+};
