@@ -186,3 +186,17 @@ export async function getAllAnnouncementsForAdmin() {
       ORDER BY an.created_at DESC`
   );
 }
+
+export type CommentRow = { id: number; document_id: number; author_id: string | null; body: string; created_at: string; author_name: string | null };
+
+export async function getComments(documentId: number): Promise<CommentRow[]> {
+  return query<CommentRow>(
+    `SELECT c.*, m.name AS author_name FROM comments c LEFT JOIN members m ON m.id = c.author_id
+      WHERE c.document_id = $1 ORDER BY c.created_at ASC`,
+    [documentId]
+  );
+}
+
+export async function addComment(documentId: number, authorId: string, body: string): Promise<void> {
+  await query("INSERT INTO comments (document_id, author_id, body) VALUES ($1, $2, $3)", [documentId, authorId, body]);
+}
