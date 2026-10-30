@@ -38,7 +38,7 @@ export default async function NewAnnouncementPage() {
             {members.map(m => (
               <label key={m.id} className="flex items-center gap-2 text-sm">
                 <input type="checkbox" name="recipients" value={m.id} />
-                {m.name} <span className="text-black/40">({m.email})</span>
+                {m.name} <span className="text-black/40">({m.email ?? "no email — in-app only"})</span>
               </label>
             ))}
           </div>

@@ -28,7 +28,9 @@ export default async function MembersPage() {
               </div>
               {m.employer && <div className="text-xs text-black/50 mb-1">{m.employer}</div>}
               {m.city && <div className="text-xs text-black/50 mb-1">{m.city}</div>}
-              <a href={`mailto:${m.email}`} className="text-xs text-black/60 underline block mb-1">{m.email}</a>
+              {m.email
+                ? <a href={`mailto:${m.email}`} className="text-xs text-black/60 underline block mb-1">{m.email}</a>
+                : <div className="text-xs text-black/40 italic mb-1">Email not on file</div>}
               {m.phone && <div className="text-xs text-black/50 mb-1">{m.phone}</div>}
               {m.linkedin && <a href={m.linkedin} target="_blank" rel="noopener" className="text-xs text-black/60 underline block mb-1">LinkedIn profile</a>}
               <div className="flex flex-wrap gap-1 mt-2">

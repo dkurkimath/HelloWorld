@@ -32,8 +32,13 @@ export async function sendAnnouncementForm(formData: FormData) {
   for (const memberId of recipientIds) {
     const member = byId[memberId];
     if (!member) continue;
-    await sendAnnouncementEmail(member.email, subject, message, user.name);
-    await markAnnouncementEmailed(annId, memberId);
+    if (member.email) {
+      await sendAnnouncementEmail(member.email, subject, message, user.name);
+      await markAnnouncementEmailed(annId, memberId);
+    }
+    // No email on file (e.g. a board member added before we had their
+    // contact info) — they still see it in-app via announcement_recipients,
+    // just no email alert goes out.
   }
 
   redirect("/announcements");

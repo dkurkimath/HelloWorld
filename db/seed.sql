@@ -14,6 +14,9 @@ INSERT INTO members (id, name, email, role, title, employer, city, phone, linked
 INSERT INTO members (id, name, email, role, title, employer, city, phone, linkedin, committees, commitment_signed, is_admin) VALUES ('m11', 'Alicia Shankland', 'alicia.s@sophiaway.org', 'Member', 'Board Member', 'Retired — formerly Stanton Chase, Principal', 'Bothell', '425-864-3370', 'https://linkedin.com/in/aliciashankland', '{}', FALSE, FALSE) ON CONFLICT (id) DO NOTHING;
 INSERT INTO members (id, name, email, role, title, employer, city, phone, linkedin, committees, commitment_signed, is_admin) VALUES ('m12', 'Orna Berryman', 'orna.b@sophiaway.org', 'Member', 'Board Member', 'Retired — formerly Intel, Sr. Director Engineering', 'Bellevue', '408-637-8910', 'https://www.linkedin.com/in/oberryman/', '{}', FALSE, FALSE) ON CONFLICT (id) DO NOTHING;
 INSERT INTO members (id, name, email, role, title, employer, city, phone, linkedin, committees, commitment_signed, is_admin) VALUES ('m13', 'Treencee Russell', 'treencee.r@sophiaway.org', 'Member', 'Board Member', 'Midlakes United, Founder and GM', 'Bellevue', '425-351-9921', 'https://www.linkedin.com/in/treencee-russell-09749721a/', ARRAY['Development (voting)']::text[], FALSE, FALSE) ON CONFLICT (id) DO NOTHING;
+-- Listed on the live roster sheet (Committee Membership tab) with no other info yet.
+-- No email on file, so she can't sign in until one is added.
+INSERT INTO members (id, name, email, role, title, employer, city, phone, linkedin, committees, commitment_signed, is_admin) VALUES ('m14', 'Jennifer Savage', NULL, 'Member', 'Board Member', NULL, NULL, NULL, NULL, '{}', NULL, FALSE) ON CONFLICT (id) DO NOTHING;
 
 -- Categories
 INSERT INTO categories (id, label, icon, drive_folder_id, sort_order) VALUES ('start', '00. Start Here', 'ti-flag', '1TAPcnMVmIqrUU5ot_TyNJoFzFzftGySC', 0) ON CONFLICT (id) DO NOTHING;

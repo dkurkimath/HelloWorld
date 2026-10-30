@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS members (
   id            TEXT PRIMARY KEY,
   name          TEXT NOT NULL,
-  email         TEXT NOT NULL UNIQUE,
+  email         TEXT UNIQUE,  -- nullable: a board member can be added before we have their email; they can't sign in until it's set
   role          TEXT NOT NULL,          -- Chair | Treasurer | Secretary | Board Liaison | Member | Staff
   title         TEXT,
   employer      TEXT,

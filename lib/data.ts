@@ -1,7 +1,7 @@
 import { query, queryOne, pool } from "./db";
 
 export type Member = {
-  id: string; name: string; email: string; role: string; title: string | null;
+  id: string; name: string; email: string | null; role: string; title: string | null;
   employer: string | null; city: string | null; phone: string | null; linkedin: string | null;
   committees: string[]; commitment_signed: boolean | null; is_admin: boolean;
 };
