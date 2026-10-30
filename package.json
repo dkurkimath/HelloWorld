@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "db:migrate": "node scripts/migrate.mjs",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "vercel-build": "node scripts/migrate.mjs && node scripts/seed.mjs && next build"
   },
   "dependencies": {
     "next": "14.2.35",
