@@ -18,6 +18,9 @@ INSERT INTO members (id, name, email, role, title, employer, city, phone, linked
 -- No email on file, so she can't sign in until one is added.
 INSERT INTO members (id, name, email, role, title, employer, city, phone, linkedin, committees, commitment_signed, is_admin) VALUES ('m14', 'Jennifer Savage', NULL, 'Member', 'Board Member', NULL, NULL, NULL, NULL, '{}', NULL, FALSE) ON CONFLICT (id) DO NOTHING;
 
+-- Portal admin / tester account (personal Gmail) so the site can be signed into and managed before every board member's sophiaway.org login is confirmed.
+INSERT INTO members (id, name, email, role, title, employer, city, phone, linkedin, committees, commitment_signed, is_admin) VALUES ('m15', 'Kriti Kurkimath', 'kriti.kurkimath@gmail.com', 'Member', 'Portal Admin', NULL, NULL, NULL, NULL, '{}', NULL, TRUE) ON CONFLICT (id) DO NOTHING;
+
 -- Categories
 INSERT INTO categories (id, label, icon, drive_folder_id, sort_order) VALUES ('start', '00. Start Here', 'ti-flag', '1TAPcnMVmIqrUU5ot_TyNJoFzFzftGySC', 0) ON CONFLICT (id) DO NOTHING;
 INSERT INTO categories (id, label, icon, drive_folder_id, sort_order) VALUES ('about', '01. About TSW', 'ti-info-circle', '1VnmdGWPYlg2IV0mHPEcfqFX1a3-VTJwK', 1) ON CONFLICT (id) DO NOTHING;

@@ -7,14 +7,6 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          // Nudges Google's account chooser toward the org's Workspace accounts.
-          // This is a hint, not a security boundary — the real check below
-          // confirms the signed-in email is an existing member record.
-          hd: "sophiaway.org",
-        },
-      },
     }),
   ],
   session: { strategy: "jwt" },
