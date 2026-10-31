@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/session";
 import { query, queryOne } from "@/lib/db";
-import { logActivity } from "@/lib/data";
+import { logActivity, setMemberEmail } from "@/lib/data";
 
 export async function updateMemberForm(memberId: string, formData: FormData) {
   const user = await getCurrentUser();
@@ -34,5 +34,16 @@ export async function addMemberForm(formData: FormData) {
   const id = "m" + Date.now();
   await query("INSERT INTO members (id, name, email, role) VALUES ($1, $2, $3, $4)", [id, name, email, role]);
   await logActivity(user.id, "ti-user-plus", `<b>${user.name}</b> added ${name} (${role})`, "member");
+  revalidatePath("/admin/members");
+}
+
+export async function setEmailForm(memberId: string, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user?.isAdmin) throw new Error("Admin only");
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("Enter a valid email");
+  const member = await queryOne<{ name: string }>("SELECT name FROM members WHERE id = $1", [memberId]);
+  await setMemberEmail(memberId, email);
+  await logActivity(user.id, "ti-mail", `<b>${user.name}</b> set an email for ${member?.name}`, "member");
   revalidatePath("/admin/members");
 }

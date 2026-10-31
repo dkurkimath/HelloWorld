@@ -13,10 +13,13 @@ export default async function Nav() {
       <Link className={linkCls} href="/announcements">Announcements</Link>
       <Link className={linkCls} href="/members">Member directory</Link>
       <Link className={linkCls} href="/activity">Activity log</Link>
+      <Link className={linkCls} href="/profile">My profile</Link>
       {user.isAdmin && (
         <>
           <div className="text-xs uppercase text-white/40 mt-4 mb-1 px-3">Admin</div>
           <Link className={linkCls} href="/admin/members">Manage members</Link>
+          <Link className={linkCls} href="/admin/approvals">Pending approvals</Link>
+          <Link className={linkCls} href="/admin/drive">Google Drive sync</Link>
           <Link className={linkCls} href="/announcements/new">New announcement</Link>
         </>
       )}

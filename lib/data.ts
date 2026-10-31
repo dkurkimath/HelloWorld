@@ -44,6 +44,12 @@ export async function getDocuments(forMemberId: string): Promise<DocRow[]> {
 // visibility ('all' | 'custom') and any per-member access override.
 export async function canAccessDocument(documentId: number, memberId: string, isAdmin: boolean): Promise<boolean> {
   if (isAdmin) return true;
+  // Documents awaiting approval (or rejected) are only visible to their uploader and admins.
+  const doc = await queryOne<{ status: string; uploaded_by: string | null }>(
+    "SELECT status, uploaded_by FROM documents WHERE id = $1",
+    [documentId]
+  );
+  if (doc && doc.status !== "current" && doc.uploaded_by !== memberId) return false;
   const vis = await queryOne<{ visibility: string }>(
     "SELECT visibility FROM document_visibility WHERE document_id = $1",
     [documentId]
@@ -199,4 +205,63 @@ export async function getComments(documentId: number): Promise<CommentRow[]> {
 
 export async function addComment(documentId: number, authorId: string, body: string): Promise<void> {
   await query("INSERT INTO comments (document_id, author_id, body) VALUES ($1, $2, $3)", [documentId, authorId, body]);
+}
+
+// ---------- search ----------
+// IDs of documents whose title, category, or any comment matches the text.
+// Callers still filter by canAccessDocument — this only does the matching.
+export async function searchDocumentIds(text: string): Promise<number[]> {
+  const like = `%${text.replace(/[\\%_]/g, m => "\\" + m)}%`;
+  const rows = await query<{ id: number }>(
+    `SELECT DISTINCT d.id FROM documents d
+       LEFT JOIN categories c ON c.id = d.category_id
+       LEFT JOIN comments cm ON cm.document_id = d.id
+      WHERE d.title ILIKE $1 OR c.label ILIKE $1 OR cm.body ILIKE $1`,
+    [like]
+  );
+  return rows.map(r => r.id);
+}
+
+// ---------- submitting + approving documents ----------
+export async function createDocument(d: {
+  title: string; categoryId: string; docType: string; driveUrl: string | null; uploadedBy: string; status: "current" | "review";
+}): Promise<number> {
+  const row = await queryOne<{ id: number }>(
+    `INSERT INTO documents (title, category_id, doc_type, drive_url, status, uploaded_by)
+     VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+    [d.title, d.categoryId, d.docType, d.driveUrl, d.status, d.uploadedBy]
+  );
+  await query("INSERT INTO document_visibility (document_id, visibility) VALUES ($1, 'all') ON CONFLICT DO NOTHING", [row!.id]);
+  return row!.id;
+}
+
+export async function getPendingDocuments() {
+  return query(
+    `SELECT d.id, d.title, d.doc_type, d.drive_url, d.created_at, c.label AS category_label,
+            u.name AS uploader_name, u.email AS uploader_email
+       FROM documents d
+       LEFT JOIN categories c ON c.id = d.category_id
+       LEFT JOIN members u ON u.id = d.uploaded_by
+      WHERE d.status = 'review' ORDER BY d.created_at`
+  );
+}
+
+export async function reviewDocument(documentId: number, reviewerId: string, decision: "approved" | "rejected", note: string | null) {
+  return queryOne<{ title: string; uploaded_by: string | null }>(
+    `UPDATE documents SET status = $2, reviewed_by = $3, review_note = $4, updated_at = now()
+      WHERE id = $1 AND status = 'review' RETURNING title, uploaded_by`,
+    [documentId, decision === "approved" ? "current" : "rejected", reviewerId, note]
+  );
+}
+
+// ---------- profiles ----------
+export async function updateOwnProfile(memberId: string, f: { title: string | null; employer: string | null; city: string | null; phone: string | null; linkedin: string | null }) {
+  await query(
+    "UPDATE members SET title = $2, employer = $3, city = $4, phone = $5, linkedin = $6 WHERE id = $1",
+    [memberId, f.title, f.employer, f.city, f.phone, f.linkedin]
+  );
+}
+
+export async function setMemberEmail(memberId: string, email: string) {
+  await query("UPDATE members SET email = $2 WHERE id = $1", [memberId, email.trim().toLowerCase()]);
 }

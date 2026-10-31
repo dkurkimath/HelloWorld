@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getAllMembers } from "@/lib/data";
-import { updateMemberForm, removeMemberAction, addMemberForm } from "./actions";
+import { updateMemberForm, removeMemberAction, addMemberForm, setEmailForm } from "./actions";
 
 const ROLES = ["Chair", "Treasurer", "Secretary", "Board Liaison", "Member", "Staff"];
 
@@ -24,7 +24,14 @@ export default async function AdminMembersPage() {
           >
             <div className="flex-1 min-w-0">
               <div className="text-sm font-medium">{m.name}</div>
-              <div className="text-xs text-black/40">{m.email || "no email on file"}</div>
+              {m.email ? (
+                <div className="text-xs text-black/40">{m.email}</div>
+              ) : (
+                <div className="flex gap-1 mt-1">
+                  <input name="email" type="email" placeholder="add email so they can sign in" className="border border-black/10 rounded px-2 py-1 text-xs w-56" />
+                  <button formAction={setEmailForm.bind(null, m.id)} className="text-xs text-navy underline">Set email</button>
+                </div>
+              )}
             </div>
             <select name="role" defaultValue={m.role} className="border border-black/10 rounded px-2 py-1 text-xs">
               {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
