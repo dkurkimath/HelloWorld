@@ -15,7 +15,7 @@ export default async function DriveSyncPage({ searchParams }: { searchParams: { 
 
       {searchParams.added !== undefined && (
         <div className="mb-4 rounded-lg bg-blue-bg text-blue-status text-sm px-4 py-2">
-          Synced {searchParams.folders} folders: {searchParams.added} new, {searchParams.updated} updated.
+          Scanned {searchParams.folders} Drive folders: {searchParams.added} new documents, {searchParams.updated} updated.
         </div>
       )}
       {searchParams.error && <div className="mb-4 rounded-lg bg-amber-bg text-amber-status text-sm px-4 py-2">{searchParams.error}</div>}

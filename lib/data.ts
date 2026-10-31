@@ -6,7 +6,7 @@ export type Member = {
   committees: string[]; commitment_signed: boolean | null; is_admin: boolean;
 };
 
-export type Category = { id: string; label: string; icon: string; drive_folder_id: string | null; sort_order: number };
+export type Category = { id: string; label: string; icon: string; drive_folder_id: string | null; sort_order: number; parent_id: string | null };
 
 export type DocRow = {
   id: number; title: string; category_id: string; doc_type: string; drive_url: string | null;
@@ -264,4 +264,30 @@ export async function updateOwnProfile(memberId: string, f: { title: string | nu
 
 export async function setMemberEmail(memberId: string, email: string) {
   await query("UPDATE members SET email = $2 WHERE id = $1", [memberId, email.trim().toLowerCase()]);
+}
+
+// ---------- folders ----------
+export async function createFolder(label: string, parentId: string | null): Promise<string> {
+  const id = "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  await query("INSERT INTO categories (id, label, icon, parent_id, sort_order) VALUES ($1, $2, 'ti-folder', $3, 100)", [id, label, parentId]);
+  return id;
+}
+
+export async function renameFolder(id: string, label: string) {
+  await query("UPDATE categories SET label = $2 WHERE id = $1", [id, label]);
+}
+
+// Only empty folders can be deleted, so a document is never orphaned.
+export async function deleteFolderIfEmpty(id: string): Promise<boolean> {
+  const used = await queryOne<{ n: string }>(
+    "SELECT (SELECT count(*) FROM categories WHERE parent_id = $1) + (SELECT count(*) FROM documents WHERE category_id = $1) AS n",
+    [id]
+  );
+  if (Number(used?.n) > 0) return false;
+  await query("DELETE FROM categories WHERE id = $1", [id]);
+  return true;
+}
+
+export async function moveDocument(documentId: number, folderId: string) {
+  await query("UPDATE documents SET category_id = $2, updated_at = now() WHERE id = $1", [documentId, folderId]);
 }

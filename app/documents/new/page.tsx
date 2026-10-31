@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getCategories } from "@/lib/data";
+import { folderOptions } from "@/lib/folders";
 import { submitDocumentForm } from "./actions";
 
 export default async function NewDocumentPage() {
@@ -22,9 +23,9 @@ export default async function NewDocumentPage() {
           <input name="title" required className={input} />
         </div>
         <div>
-          <label className="text-xs font-medium text-black/60">Category</label>
+          <label className="text-xs font-medium text-black/60">Folder</label>
           <select name="categoryId" required className={input}>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+            {folderOptions(categories).map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
           </select>
         </div>
         <div>

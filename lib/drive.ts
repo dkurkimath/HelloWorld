@@ -78,37 +78,65 @@ export function docTypeFor(mimeType: string): "pdf" | "xls" | "img" | "doc" {
   return "doc";
 }
 
-export type SyncResult = { added: number; updated: number; folders: number; errors: string[] };
+export type SyncResult = { added: number; updated: number; folders: number; errors: string[]; subfolders?: number };
 
-// Imports every file in each category's Drive folder. New files become documents
-// (visible to all, category taken from the folder); files already imported keep
-// their category, status and access settings and only get a fresh title/link.
+// Imports the files in each top-level category's Drive folder, and mirrors Drive
+// subfolders as subfolders here (nested up to MAX_DEPTH levels). New files become
+// documents (visible to all, placed in the matching folder); files already
+// imported keep their folder, status and access settings and only get a fresh
+// title/link. Nothing is ever deleted.
+const MAX_DEPTH = 6;
+const FOLDER_MIME = "application/vnd.google-apps.folder";
+
 export async function syncDriveFolders(importedBy: string, f: FetchFn = fetch): Promise<SyncResult> {
-  const result: SyncResult = { added: 0, updated: 0, folders: 0, errors: [] };
+  const result: SyncResult & { subfolders: number } = { added: 0, updated: 0, folders: 0, errors: [], subfolders: 0 };
   const token = await getAccessToken(f);
-  const cats = await query<{ id: string; label: string; drive_folder_id: string }>(
-    "SELECT id, label, drive_folder_id FROM categories WHERE drive_folder_id IS NOT NULL"
-  );
-  for (const cat of cats) {
-    try {
-      const files = (await listFolder(cat.drive_folder_id, token, f)).filter(x => x.mimeType !== "application/vnd.google-apps.folder");
-      result.folders++;
-      for (const file of files) {
-        const row = await queryOne<{ inserted: boolean; id: number }>(
-          `INSERT INTO documents (title, category_id, doc_type, drive_url, status, uploaded_by, drive_file_id)
-           VALUES ($1, $2, $3, $4, 'current', $5, $6)
-           ON CONFLICT (drive_file_id) WHERE drive_file_id IS NOT NULL
-           DO UPDATE SET title = EXCLUDED.title, drive_url = EXCLUDED.drive_url, doc_type = EXCLUDED.doc_type, updated_at = now()
-           RETURNING id, (xmax = 0) AS inserted`,
-          [file.name, cat.id, docTypeFor(file.mimeType), file.webViewLink ?? `https://drive.google.com/file/d/${file.id}/view`, importedBy, file.id]
-        );
-        if (row!.inserted) {
-          result.added++;
-          await query("INSERT INTO document_visibility (document_id, visibility) VALUES ($1, 'all') ON CONFLICT DO NOTHING", [row!.id]);
-        } else {
-          result.updated++;
+
+  const syncFolder = async (driveFolderId: string, categoryId: string, depth: number) => {
+    const items = await listFolder(driveFolderId, token, f);
+    result.folders++;
+    for (const item of items) {
+      if (item.mimeType === FOLDER_MIME) {
+        if (depth >= MAX_DEPTH) continue;
+        // Reuse the folder if this Drive folder was seen before, otherwise create it.
+        const existing = await queryOne<{ id: string }>("SELECT id FROM categories WHERE drive_folder_id = $1", [item.id]);
+        let childId = existing?.id;
+        if (!childId) {
+          childId = "d" + item.id.slice(0, 20);
+          await query(
+            `INSERT INTO categories (id, label, icon, drive_folder_id, parent_id, sort_order)
+             VALUES ($1, $2, 'ti-folder', $3, $4, 100) ON CONFLICT (id) DO NOTHING`,
+            [childId, item.name, item.id, categoryId]
+          );
+          result.subfolders++;
         }
+        await syncFolder(item.id, childId, depth + 1);
+        continue;
       }
+      const row = await queryOne<{ inserted: boolean; id: number }>(
+        `INSERT INTO documents (title, category_id, doc_type, drive_url, status, uploaded_by, drive_file_id)
+         VALUES ($1, $2, $3, $4, 'current', $5, $6)
+         ON CONFLICT (drive_file_id) WHERE drive_file_id IS NOT NULL
+         DO UPDATE SET title = EXCLUDED.title, drive_url = EXCLUDED.drive_url, doc_type = EXCLUDED.doc_type, updated_at = now()
+         RETURNING id, (xmax = 0) AS inserted`,
+        [item.name, categoryId, docTypeFor(item.mimeType), item.webViewLink ?? `https://drive.google.com/file/d/${item.id}/view`, importedBy, item.id]
+      );
+      if (row!.inserted) {
+        result.added++;
+        await query("INSERT INTO document_visibility (document_id, visibility) VALUES ($1, 'all') ON CONFLICT DO NOTHING", [row!.id]);
+      } else {
+        result.updated++;
+      }
+    }
+  };
+
+  // Only top-level folders map to a Drive folder root; subfolders are discovered from them.
+  const roots = await query<{ id: string; label: string; drive_folder_id: string }>(
+    "SELECT id, label, drive_folder_id FROM categories WHERE drive_folder_id IS NOT NULL AND parent_id IS NULL"
+  );
+  for (const cat of roots) {
+    try {
+      await syncFolder(cat.drive_folder_id, cat.id, 0);
     } catch (e: any) {
       result.errors.push(`${cat.label}: ${e.message}`);
     }

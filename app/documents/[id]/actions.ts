@@ -2,7 +2,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
-import { addComment, canAccessDocument, recordRecentAction, logActivity } from "@/lib/data";
+import { addComment, canAccessDocument, recordRecentAction, logActivity, moveDocument } from "@/lib/data";
 import { queryOne } from "@/lib/db";
 
 export async function addCommentForm(documentId: number, formData: FormData) {
@@ -22,4 +22,17 @@ export async function addCommentForm(documentId: number, formData: FormData) {
 
   revalidatePath(`/documents/${documentId}`);
   revalidatePath("/documents");
+}
+
+export async function moveDocumentForm(documentId: number, formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user?.isAdmin) throw new Error("Admin only");
+  const folderId = formData.get("folderId") as string;
+  const folder = await queryOne<{ label: string }>("SELECT label FROM categories WHERE id = $1", [folderId]);
+  if (!folder) throw new Error("Folder not found");
+  const doc = await queryOne<{ title: string }>("SELECT title FROM documents WHERE id = $1", [documentId]);
+  await moveDocument(documentId, folderId);
+  await logActivity(user.id, "ti-folder", `<b>${user.name}</b> moved <b>${doc?.title}</b> to <b>${folder.label}</b>`, "document");
+  revalidatePath("/documents");
+  revalidatePath(`/documents/${documentId}`);
 }

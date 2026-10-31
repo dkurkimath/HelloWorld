@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
-import { getComments, canAccessDocument } from "@/lib/data";
+import { getComments, canAccessDocument, getCategories } from "@/lib/data";
+import { folderOptions, pathTo } from "@/lib/folders";
 import { queryOne } from "@/lib/db";
-import { addCommentForm } from "./actions";
+import { addCommentForm, moveDocumentForm } from "./actions";
 
 export default async function DocumentDetailPage({ params }: { params: { id: string } }) {
   const user = await getCurrentUser();
@@ -27,13 +28,26 @@ export default async function DocumentDetailPage({ params }: { params: { id: str
   }
 
   const comments = await getComments(docId);
+  const categories = await getCategories();
+  const trail = pathTo(categories, doc.category_id);
 
   return (
     <div className="max-w-xl">
-      <Link href="/documents" className="text-sm text-navy underline">&larr; Back to documents</Link>
-      <h1 className="font-display text-2xl font-bold text-navy mt-3 mb-1">{doc.title}</h1>
+      <Link href={`/documents?cat=${doc.category_id}`} className="text-sm text-navy underline">&larr; Back to {trail[trail.length - 1]?.label ?? "documents"}</Link>
+      <div className="text-xs text-black/40 mt-3">{trail.map(f => f.label).join(" / ")}</div>
+      <h1 className="font-display text-2xl font-bold text-navy mb-1">{doc.title}</h1>
       {doc.drive_url && (
         <a href={doc.drive_url} target="_blank" rel="noopener" className="text-sm text-navy underline">Open in Drive</a>
+      )}
+
+      {user.isAdmin && (
+        <form action={moveDocumentForm.bind(null, docId)} className="mt-4 flex gap-2 items-center text-sm">
+          <label className="text-xs text-black/50">Move to</label>
+          <select name="folderId" defaultValue={doc.category_id} className="border border-black/10 rounded-lg px-2 py-1 text-sm">
+            {folderOptions(categories).map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
+          </select>
+          <button className="text-navy underline text-sm">Move</button>
+        </form>
       )}
 
       <div className="mt-8">

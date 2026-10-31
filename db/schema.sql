@@ -108,3 +108,8 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS drive_file_id TEXT;
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS reviewed_by TEXT REFERENCES members(id);
 ALTER TABLE documents ADD COLUMN IF NOT EXISTS review_note TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_documents_drive_file ON documents(drive_file_id) WHERE drive_file_id IS NOT NULL;
+
+-- Folders: categories can nest (big folder -> subfolder -> ...). NULL parent = top-level folder.
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS parent_id TEXT REFERENCES categories(id) ON DELETE RESTRICT;
+CREATE INDEX IF NOT EXISTS idx_categories_parent ON categories(parent_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_drive_folder ON categories(drive_folder_id) WHERE drive_folder_id IS NOT NULL;
